@@ -1,0 +1,5 @@
+.DS_Store
+*.log
+node_modules/
+dist/
+# transient runtime artifacts (created under /tmp at runtime, never committed)
