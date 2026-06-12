@@ -1,13 +1,31 @@
-# debug-kit
+<h1 align="center">🧩 debug-kit</h1>
 
-[![skills.sh](https://skills.sh/b/dxiongya/debug-kit)](https://skills.sh/dxiongya/debug-kit)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-![Platforms](https://img.shields.io/badge/platforms-9-blue)
-![Host](https://img.shields.io/badge/host-macOS-black)
+<p align="center"><b>An <a href="https://docs.claude.com/en/docs/claude-code/skills">Agent Skill</a> for Claude Code (and Cursor · Codex · Cline · Gemini CLI …)</b><br/>
+Install it once and your AI gains hands &amp; eyes to <b>drive, inspect, and test real apps across 9 platforms</b> —<br/>
+in the background, <b>without ever touching your real cursor</b>, with a virtual pointer you can watch.</p>
 
-**[English](#english) · [简体中文](#简体中文)**
+<p align="center">
+<a href="https://skills.sh/dxiongya/debug-kit"><img alt="Agent Skill" src="https://img.shields.io/badge/Agent-Skill-7c3aed"></a>
+<a href="https://skills.sh/dxiongya/debug-kit"><img alt="install: npx skills add" src="https://img.shields.io/badge/install-npx_skills_add-black?logo=npm"></a>
+<a href="https://docs.claude.com/en/docs/claude-code/skills"><img alt="Claude Code Skill" src="https://img.shields.io/badge/Claude_Code-Skill-d97757"></a>
+<a href="https://skills.sh/dxiongya/debug-kit"><img alt="skills.sh" src="https://skills.sh/b/dxiongya/debug-kit"></a>
+<a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
+<img alt="platforms 9" src="https://img.shields.io/badge/platforms-9-blue">
+<img alt="host macOS" src="https://img.shields.io/badge/host-macOS-black">
+</p>
 
-> An AI‑agent toolkit that **drives, inspects, and tests real apps across 9 platforms** — entirely in the background, **without ever moving your real mouse or stealing focus**, with a virtual cursor you can watch.
+<p align="center"><b><a href="#english">English</a> · <a href="#简体中文">简体中文</a></b></p>
+
+```bash
+npx skills add dxiongya/debug-kit        # ← one-line install (it's a skill, not a library)
+```
+
+> [!NOTE]
+> **This is an _Agent Skill_, not an app or a library.** You don't run or `import` it — you
+> **install** it into your AI coding agent. After that, the agent automatically uses it whenever
+> you say things like *"run the app", "tap the button", "take a screenshot", "test this"*. Under
+> the hood it's a `SKILL.md` manifest plus the scripts the agent calls. Manage it with
+> [skills.sh](https://skills.sh).
 
 ---
 
@@ -133,6 +151,9 @@ for a real‑cursor click:
 <a name="简体中文"></a>
 
 ## 简体中文
+
+> [!NOTE]
+> **这是一个 _Agent Skill(智能体技能)_,不是 App、也不是库。** 你不需要"运行"或 `import` 它 —— 你把它**安装**进你的 AI 编程助手(Claude Code / Cursor / Codex …)。装好后,当你说"运行 app""点这个按钮""截个图""测一下"时,助手会**自动调用**它。底层就是一个 `SKILL.md` 清单 + 一组助手调用的脚本。用 [skills.sh](https://skills.sh) 管理。一行安装:`npx skills add dxiongya/debug-kit`
 
 **debug-kit** 让 AI 智能体(如 [Claude Code](https://claude.com/claude-code))在 **macOS、iOS、Android、Web、Electron、Flutter、React Native、Tauri、Chrome 扩展**这 9 个平台上长出"手和眼":构建、启动、截图、读取 UI 树、点击、输入、拖拽、滚动、检视、看日志——全部通过**一套统一接口**,自动识别项目类型。
 
