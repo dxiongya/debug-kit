@@ -1,10 +1,16 @@
 # macOS Debug Reference
 
-**Script**: `MAC_APP=AppName bash ~/.claude/skills/debug-kit/scripts/mac-ctl.sh <command>`
+For native UI feature validation, read [macos-validation.md](macos-validation.md) first. It adds test/data isolation, deterministic window opening, reliable selectors, popover checks, and safe local installation to this command reference.
+
+**Tool routing**: Use the current host's prescribed UI tool when available. In Codex with `cua_repl`, read its returned documentation and perform live UI interactions there; do not run the bundled UI scripts as an alternative permission or targeting workaround. Builds and XCTest remain CLI operations. The background/virtual-pointer behavior documented below applies to the bundled backend, not automatically to external tools.
+
+**Script**: `MAC_APP=AppName bash "$DEBUG_KIT_ROOT/scripts/mac-ctl.sh" <command>` (resolve `DEBUG_KIT_ROOT` from the skill catalog).
 **Tools**: Accessibility API (System Events), `CGEventPostToPid`, AppleScript, `mac-input.js` (background backend), `mac-overlay.swift` (virtual pointer)
 **Env**: `MAC_APP` (required — must match process name in Activity Monitor), `MAC_INPUT` (bg|hid), `MAC_POINTER` (on|off)
 
 ## Background interaction + virtual pointer (default)
+
+The helper caches app paths in shared `/tmp` files and targets apps by name. It prefers Xcode build settings to locate the product, with a DerivedData search fallback. When production and QA copies coexist, use an explicit build directory and verified app path/bundle identity rather than trusting cached names or fallback discovery. Its `terminate` fallback uses name-based process matching; stop only an exact, freshly verified task-owned PID instead in multi-instance sessions. Refresh the tree after each state change before any cached coordinate lookup.
 
 By default (`MAC_INPUT=bg`), all interaction is delivered **in the background**: clicks,
 drags, scrolls and keystrokes are posted straight to the target app via
@@ -103,37 +109,39 @@ This makes macOS the most AI-friendly platform to test — the AI can "see" the 
 
 ## Workflow
 
+Bundled-backend example, when the host allows it and the app is an isolated test instance. Resolve `DEBUG_KIT_ROOT` as described in `SKILL.md`.
+
 ```bash
-P=~/.claude/skills/debug-kit/scripts
+DEBUG_KIT_SCRIPTS="$DEBUG_KIT_ROOT/scripts"
 
 # 1. Build and launch
-MAC_APP=MyApp bash $P/mac-ctl.sh run /path/to/project
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" run /path/to/project
 
 # 2. Read current UI state
-MAC_APP=MyApp bash $P/mac-ctl.sh read
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" read
 
 # 3. Interact — all background; your cursor/focus are never disturbed,
 #    and a virtual pointer shows where each action lands.
-MAC_APP=MyApp bash $P/mac-ctl.sh tap label "Username"
-MAC_APP=MyApp bash $P/mac-ctl.sh type "admin"
-MAC_APP=MyApp bash $P/mac-ctl.sh key tab
-MAC_APP=MyApp bash $P/mac-ctl.sh type "password"
-MAC_APP=MyApp bash $P/mac-ctl.sh tap label "Login"
-MAC_APP=MyApp bash $P/mac-ctl.sh scroll -5            # scroll the view down
-MAC_APP=MyApp bash $P/mac-ctl.sh drag 400 300 400 600 # drag a slider/handle
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" tree
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" tap label "New item"
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" tree
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" tap label "Name"
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" type "Disposable test item"
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" key return
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" read
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" scroll -5 # scroll the view down
+# For drag, first inspect the current tree/screenshot and use observed coordinates.
 
-# (Turn off the overlay, or use the legacy cursor-moving path, if ever needed)
-# MAC_POINTER=off MAC_APP=MyApp bash $P/mac-ctl.sh tap label "Login"
-# MAC_INPUT=hid   MAC_APP=MyApp bash $P/mac-ctl.sh tap 400 300
+# Turn off the overlay only for headless/CI. Real HID requires explicit user opt-in.
+# MAC_POINTER=off MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" tap label "New item"
 
 # 4. Verify state changed
-MAC_APP=MyApp bash $P/mac-ctl.sh read
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" read
 
 # 5. Test menu
-MAC_APP=MyApp bash $P/mac-ctl.sh menu "File > New Window"
+MAC_APP=MyApp bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" menu "File > New Window"
 
-# 6. Quit
-MAC_APP=MyApp bash $P/mac-ctl.sh terminate
+# 6. Stop only the exact test instance after verifying its PID/path.
 ```
 
 ## How `read` Works
@@ -178,6 +186,8 @@ mac-ctl.sh ──┬── mac-input.js   (JXA: CGEventPostToPid + AX actions �
 
 ## Permissions
 
+Inspect existing access first. Do not grant Accessibility/Screen Recording, reset TCC, or weaken signing/security settings to make a test pass without the necessary user authorization. If blocked, report which checks could not run and use permitted read-only/model checks. The setup instructions below are for user-approved permission changes, not automatic remediation.
+
 | Feature | Permission | How to Grant |
 |---------|-----------|--------------|
 | `tree`, `read`, `tap`, `type`, `key`, `drag`, `scroll`, `menu` | **Accessibility** | System Settings → Privacy & Security → Accessibility |
@@ -209,12 +219,12 @@ The first behavior is especially nasty: a screenshot "succeeds" but shows wallpa
 | Issue | Solution |
 |-------|----------|
 | "No app name" | Set `MAC_APP=AppName` or run `build` first |
-| Tap not working | Grant Accessibility permission to Terminal in System Settings |
-| App ignores background clicks/keys | Some apps need real HID events — retry with `MAC_INPUT=hid` |
+| Tap not working | Check exact target, fresh tree, focus, and existing Accessibility access; ask the user if access is missing |
+| App ignores background clicks/keys | Inspect the failure first; `MAC_INPUT=hid` requires explicit user opt-in, not an automatic retry |
 | No virtual pointer appears | Need `swiftc` (Xcode CLT) to build the overlay; or `MAC_POINTER=off` is set |
-| `tree`/`tap label` hang but coords work | Host lacks Accessibility (sandbox/permission) — grant AX, relaunch terminal |
+| `tree`/`tap label` hang but coords work | Check sandbox/Accessibility access; request necessary user action rather than bypassing the blocked path |
 | `read` shows nothing | App may not support Accessibility; try `tree` for raw dump |
-| Screenshot blank | Grant Screen Recording permission; or use `read` instead |
+| Screenshot blank | Check existing Screen Recording access; use permitted AX inspection or ask the user for missing access |
 | Menu click fails | Ensure exact menu item name; use `menu` without args to list items |
 | Build fails | Run `xcodegen generate` first if using project.yml |
 

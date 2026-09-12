@@ -117,6 +117,10 @@ Collection is always native/semantic; interaction stays background.
 
 See `references/<platform>.md` for each platform's full command set.
 
+### Native macOS validation
+
+The [native macOS validation workflow](references/macos-validation.md) covers isolated QA identities and stores, machine-wide clipboard risks, focused XCTest results, accessibility-driven popover checks, icon consistency, and recoverable local app replacement. It distinguishes automated passes from manual UI verification and preserves concurrent user edits. In Codex, follow the host's prescribed UI tool; the bundled scripts' background-cursor guarantees do not automatically apply to other tools.
+
 ### How it works
 
 debug-kit runs on a **macOS host** and drives each platform with its *native, professional*
@@ -236,6 +240,10 @@ bash $P/flutter-ctl.sh vm widgets            # 经 Dart VM Service 拿语义 wid
 | **Chrome 扩展** | 经 `web-ctl` 对扩展页面用 CDP |
 
 各平台完整命令见 `references/<平台>.md`。
+
+### macOS 原生应用验收
+
+[macOS 调试实战流程](references/macos-validation.md)整理了测试实例与数据隔离、系统剪贴板污染风险、定向 XCTest、弹窗与焦点实测、图标一致性，以及可恢复的本机应用替换流程。自动测试通过与人工界面验证分别记录，并保护用户同期操作。在 Codex 中遵循宿主规定的 UI 工具；脚本的后台光标保证不自动适用于其他工具。
 
 ### 工作原理
 

@@ -1,7 +1,7 @@
 ---
 name: debug-kit
 description: >
-  Cross-platform app debug and testing skill for Claude Code.
+  Cross-platform app debug and testing skill for Codex and Claude Code.
   Build, launch, screenshot, tap, type, inspect, and monitor applications
   across 9 platforms: Electron, iOS, macOS, Web, Flutter, React Native, Android, Tauri, Chrome Extension.
   Auto-detects project type from package.json, pubspec.yaml, xcodeproj, build.gradle, src-tauri/, manifest.json (MV3).
@@ -13,7 +13,7 @@ description: >
 license: MIT
 metadata:
   author: daxiongya
-  version: "1.2.0"
+  version: "1.3.0"
   type: utility
   mode: assistive
 ---
@@ -21,6 +21,19 @@ metadata:
 # Debug Kit
 
 Cross-platform app debug toolkit. One skill to build, launch, interact with, and inspect apps across 9 platforms.
+
+## Evidence-driven test loop
+
+Use the smallest loop that proves the requested behavior: reproduce → inspect state → change when authorized → build → focused tests → actual UI verification. A successful build is not evidence that the interaction works.
+
+- Before mutating a running app, identify the exact instance and its data store. Use disposable fixtures. For desktop apps, account for shared resources such as the clipboard, global shortcuts, login items, and sync; a separate process or bundle ID alone does not isolate them.
+- Write observable checks for the happy path, cancellation/undo, persistence, and neighboring behavior. For a small visual-only change, a build and focused visual check may suffice.
+- Read the accessibility tree to locate controls; use screenshots for layout, icons, contrast, and clipping. After an action, refresh state before choosing the next target. Prefer scoped, stable accessibility identifiers over repeated labels or coordinates.
+- If automation fails, distinguish a product failure from targeting, focus, permission, or runner failure. After one reasoned correction and retry, change the verification method or report the blocker instead of repeating the same failed event sequence.
+- Keep automated-test results and manually verified UI results separate. Record the exact build, checks, outcome, and remaining uncertainty; do not label manual verification as a passing automated test.
+- Install or replace a user's app only when requested. Back up the app and consistent data first; preserve concurrent user changes. An unexpected data difference calls for investigation, not an automatic restore.
+
+For macOS native/menu-bar apps, SwiftUI popovers, shared-clipboard testing, or replacing an installed build, read [references/macos-validation.md](references/macos-validation.md) in addition to the platform reference. It covers the concrete isolation, XCTest, UI, and installation workflow.
 
 ## Step 1: Determine Platform
 
@@ -44,38 +57,44 @@ Use `pilot.sh detect` or check project files manually:
 
 ## Step 2: Use the Right Script
 
+Resolve the skill root from the current skill catalog, not a hard-coded installation path. Prefer purpose-built tools/CLIs for builds and tests. If the host requires live UI interaction through a tool such as `cua_repl`, read and follow that tool's API instead of the bundled AppleScript/CGEvent/CDP interaction helpers. Do not use another backend to bypass permission or targeting failures.
+
+The background/virtual-pointer behavior below describes the bundled scripts, not a guarantee about a host-provided UI tool. Do not claim that an external tool preserves cursor/focus unless its documentation supports that. If it cannot meet the user's non-interference requirement, arrange a controlled test window with the user or report the limitation.
+
 ```bash
-P=~/.claude/skills/debug-kit/scripts
+# Replace this example path with the resolved directory containing this SKILL.md.
+DEBUG_KIT_ROOT="/absolute/path/to/debug-kit"
+DEBUG_KIT_SCRIPTS="$DEBUG_KIT_ROOT/scripts"
 
 # Electron (CDP protocol)
-CDP_PORT=9222 node $P/cdp-client.mjs <command>
+CDP_PORT=9222 node "$DEBUG_KIT_SCRIPTS/cdp-client.mjs" <command>
 
 # iOS (xcrun simctl + CGEvent)
-bash $P/ios-ctl.sh <command>
+bash "$DEBUG_KIT_SCRIPTS/ios-ctl.sh" <command>
 
 # macOS (Accessibility API + CGEventPostToPid, background by default + virtual pointer)
-MAC_APP=AppName bash $P/mac-ctl.sh <command>
+MAC_APP=AppName bash "$DEBUG_KIT_SCRIPTS/mac-ctl.sh" <command>
 
 # Web (CDP via Chrome)
-bash $P/web-ctl.sh <command>
+bash "$DEBUG_KIT_SCRIPTS/web-ctl.sh" <command>
 
 # Flutter (delegates to ios/web/macos)
-bash $P/flutter-ctl.sh <command>
+bash "$DEBUG_KIT_SCRIPTS/flutter-ctl.sh" <command>
 
 # React Native (delegates to ios)
-bash $P/rn-ctl.sh <command>
+bash "$DEBUG_KIT_SCRIPTS/rn-ctl.sh" <command>
 
 # Android (adb + uiautomator)
-bash $P/android-ctl.sh <command>
+bash "$DEBUG_KIT_SCRIPTS/android-ctl.sh" <command>
 
 # Chrome Extension (web-ext + CDP)
 # See references/chrome-extension.md
 
 # Tauri (delegates to mac-ctl.sh — AX API reads DOM through WKWebView)
-bash $P/tauri-ctl.sh <command>
+bash "$DEBUG_KIT_SCRIPTS/tauri-ctl.sh" <command>
 ```
 
-Or use the unified router: `bash $P/pilot.sh <platform> <command>` / `bash $P/pilot.sh auto <command>`
+Or use the unified router: `bash "$DEBUG_KIT_SCRIPTS/pilot.sh" <platform> <command>` / `bash "$DEBUG_KIT_SCRIPTS/pilot.sh" auto <command>`.
 
 ## Universal Capabilities
 
@@ -94,6 +113,8 @@ Every platform supports these core operations (read platform reference for exact
 | **Test** | Run platform test suite (Jest / XCTest / flutter test / etc.) |
 
 ## Interaction Fidelity — never move the user's real cursor
+
+This section governs the bundled script backend; host-required UI tools follow the routing and non-interference checks above.
 
 **This is the core policy. (1) Collection is always native/semantic. (2) Every
 mouse-controlling action is delivered in the BACKGROUND and represented by the *virtual
